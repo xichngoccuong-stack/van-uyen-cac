@@ -1,0 +1,506 @@
+/* ===== CUSTOM FONT ===== */
+@font-face {
+    font-family: 'VNI-Thuphap';
+    src: url('vni.thuphap.vniongdo.ttf') format('truetype');
+}
+
+/* ===== RESET ===== */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: "Segoe UI", sans-serif;
+}
+
+/* ===== BACKGROUND IMAGE ===== */
+#image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+}
+
+/* ===== BACKGROUND VIDEO ===== */
+#video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    z-index: -1;
+}
+
+/* ===== AUTHOR LINK ===== */
+#author-link {
+    display: none;
+}
+
+/* ===== HEADER ===== */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100px;
+
+    background: transparent;
+
+    display: none;
+
+    z-index: 100;
+}
+
+/* ===== CENTER ===== */
+.logo-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ===== LOGO ===== */
+.logo-container img {
+    width: 90px;
+    height: 90px;
+}
+
+/* ===== TITLE ===== */
+h1 {
+    margin: 0;
+    font-size: 40px;
+    color: white;
+    letter-spacing: 3px;
+    font-family: 'VNI-Thuphap', cursive;
+    font-weight: normal;
+}
+
+/* ===== MENU ===== */
+.menu-container {
+    position: fixed;
+    top: 90px;
+    left: 20px;
+}
+
+.menu-dropdown {
+    display: none;
+    position: absolute;
+    top: 40px;
+    left: 0;
+    background: transparent;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 150;
+}
+
+.menu-dropdown ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu-dropdown li {
+    margin: 5px 0;
+}
+
+.menu-dropdown a {
+    color: white;
+    text-decoration: none;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    white-space: nowrap;
+    font-size: 20px;
+}
+
+#check-vocab-link {
+    background: linear-gradient(to right, orange, red);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+#add-vocab-link {
+    background: linear-gradient(to right, yellow, green);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+#xian-yin-ge-link {
+    background: linear-gradient(to right, red, orange);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+
+/* ===== SEARCH FILTER ROW ===== */
+.search-filter-row {
+    position: fixed;
+    top: 100px;
+    left: 62px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* ===== SEARCH INPUT ===== */
+.search-input {
+    width: 163px;
+    height: 13px;
+    padding: 5px;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 5px;
+    background: rgba(0,0,0,0.3);
+    color: white;
+    font-family: 'Shalimar', sans-serif;
+    font-size: 20px;
+}
+
+.search-input::placeholder {
+    font-family: 'Ma Shan Zheng', sans-serif;
+}
+
+/* ===== CATEGORY FILTER ===== */
+.category-filter {
+    width: 60px;
+    height: 25px;
+    padding: 5px;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 5px;
+    background: rgba(0,0,0,0.3);
+    color: white;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* ===== VOCAB FORM ===== */
+.vocab-form {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: transparent;
+    color: white;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    font-size: 20px;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 200;
+}
+
+#listen-vocab-modal {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: black;
+}
+
+.vocab-form form {
+    display: flex;
+    flex-direction: column;
+}
+
+.vocab-form label {
+    margin-top: 10px;
+}
+
+.vocab-form input {
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+.vocab-form h2 {
+    text-align: center;
+}
+
+.vocab-form button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'Ma Shan Zheng', sans-serif;
+}
+
+.button-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ===== VOCAB LIST ===== */
+.vocab-list {
+    position: fixed;
+    top: 130px;
+    left: 60px;
+    right: 0;
+    bottom: 0;
+    overflow-y: scroll;
+    color: white;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    font-size: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    background: transparent;
+    z-index: 50;
+}
+
+.vocab-list div {
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px;
+    text-align: left;
+    word-wrap: break-word;
+}
+
+/* ===== TRANSPARENT SCROLLBAR FOR VOCAB LIST ===== */
+.vocab-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vocab-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.vocab-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+}
+
+.vocab-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+
+.vietnam-style {
+    font-family: 'Shalimar', cursive;
+    font-size: 1.4em;
+}
+
+.speaker-icon {
+    cursor: pointer;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.speaker-icon:hover {
+    color: #fff;
+}
+
+/* ===== NOTIFICATION ===== */
+.notification {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    font-size: 18px;
+    z-index: 300;
+}
+
+/* ===== SPINNER LOADING ===== */
+.spinner {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255,255,255,0.3);
+    border-top: 5px solid #4CAF50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 1000;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ===== DIMMED CLASS ===== */
+.dimmed {
+    display: none;
+}
+
+/* ===== OPTION BUTTONS ===== */
+.vocab-form .option-btn {
+    font-family: 'Shalimar', cursive !important;
+    font-size: 1.2em;
+    padding: 15px;
+    margin: 5px;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 5px;
+    background: rgba(0,0,0,0.3);
+    color: white;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    overflow: visible;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+}
+
+/* Read Vocab Modal transparent background */
+#read-vocab-modal {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: black !important;
+}
+
+/* Word Chinese color */
+#word-chinese {
+    background: linear-gradient(to right, orange, red);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+/* Vocab Count */
+#vocab-count {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 140px;
+    left: 20px;
+    text-align: center;
+}
+
+#vocab-count span {
+    line-height: 1;
+    margin: 0;
+}
+
+/* ===== HIGHLIGHT FOR PLAYING WORD ===== */
+.chinese-word.highlight {
+    border: 2px solid green;
+    border-radius: 3px;
+    padding: 2px;
+    background-color: rgba(0, 255, 0, 0.1);
+}
+.chinese-word.highlight-last {
+    border: 2px solid blue;
+    border-radius: 3px;
+    padding: 2px;
+    background-color: rgba(0, 0, 255, 0.1);
+}
+
+/* ===== PAGINATION ===== */
+.pagination {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    font-size: 16px;
+    background: rgba(0,0,0,0.3);
+    padding: 10px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.pagination button {
+    padding: 5px 10px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    font-size: 16px;
+}
+
+.pagination button:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.pagination button.active {
+    background: rgba(255,255,255,0.2);
+    border-color: white;
+}
+
+/* ===== BACKGROUND THUMBNAILS ===== */
+.background-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.thumbnail {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 5px;
+}
+
+.thumbnail.selected {
+    border-color: blue;
+}
+
+/* ===== LOADING SPINNER ===== */
+.loading-spinner {
+    text-align: center;
+    padding: 20px;
+    font-size: 16px;
+    color: white;
+}
+
+.loading-spinner::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== SELECT BACKGROUND LINK ===== */
+#select-background-link {
+    background: linear-gradient(to right, purple, red);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+

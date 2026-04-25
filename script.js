@@ -1,0 +1,673 @@
+// Firebase config
+const firebaseConfig = {
+    apiKey: "AIzaSyCEU_hkazFaQ47eBcWglU0QZr5N4i_XPFk",
+    authDomain: "eng-vocab-website.firebaseapp.com",
+    projectId: "eng-vocab-website",
+    storageBucket: "eng-vocab-website.firebasestorage.app",
+    messagingSenderId: "669746577120",
+    appId: "1:669746577120:web:494b943ef1319ce4d69a85",
+    measurementId: "G-DHBPC5RL89"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Cloudinary config
+const cloudName = 'dglxrlydv';
+const uploadPreset = 'vocab_images';
+
+document.addEventListener('DOMContentLoaded', function() {
+    const header = document.querySelector('header');
+    if (header) header.style.display = 'none';
+
+    const authorLink = document.getElementById('author-link');
+    if (authorLink) authorLink.style.display = 'none';
+});
+
+Promise.all([
+    new Promise(resolve => setTimeout(resolve, 2000)),
+    document.fonts.ready,
+    db.collection('vocabularies').get(),
+    db.collection('quiz-settings').doc('settings').get()
+]).then(([_timeout, _fonts, querySnapshot, settingsDoc]) => {
+    document.getElementById('image').style.display = 'none';
+    document.getElementById('video').style.display = 'block';
+    document.querySelector('header').style.display = 'block';
+    document.getElementById('author-link').style.display = 'block';
+    
+    // Display vocabularies
+    const list = document.getElementById('vocab-list');
+    let vocabularies = [];
+    querySnapshot.forEach((doc) => {
+        vocabularies.push({ id: doc.id, ...doc.data() });
+    });
+
+    vocabularies.sort((a, b) => (a.pinyin || '').localeCompare(b.pinyin || ''));
+
+    let includeGucu = true;
+    if (settingsDoc.exists) {
+        const data = settingsDoc.data();
+        includeGucu = data.includeGucu !== false;
+    }
+    if (!includeGucu) {
+        vocabularies = vocabularies.filter(vocab => vocab.category !== '古词');
+        const categoryFilter = document.getElementById('category-filter');
+        const gucuOption = categoryFilter.querySelector('option[value="古词"]');
+        if (gucuOption) {
+            gucuOption.remove();
+        }
+    }
+
+    const itemsPerPage = 50;
+    let currentPage = 1;
+
+    function displayVocabularies(filteredVocabularies, page = 1) {
+        list.innerHTML = '';
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageVocabularies = filteredVocabularies.slice(startIndex, endIndex);
+
+        pageVocabularies.forEach((data) => {
+            const item = document.createElement('div');
+            item.setAttribute('data-doc-id', data.id);
+            item.innerHTML = `<div style="text-align: center; font-size: 1.2em;"><span class="edit-icon" style="font-size: 0.8em;">✏️</span> <span id="chinese-${data.id}" class="chinese-word">${data.chinese}</span> <span class="speaker-icon" style="font-size: 0.8em;">🔊</span></div><div>意思: <span class="vietnam-style">${data.meaning}</span><br>拼音: <span class="vietnam-style">${data.pinyin}</span>${data.hanviet && data.hanviet !== data.meaning ? '<br>汉越音: <span class="vietnam-style">' + data.hanviet + '</span>' : ''}</div>`;
+            const speakerIcon = item.querySelector('.speaker-icon');
+            if (speakerIcon) {
+                speakerIcon.addEventListener('click', () => {
+                    if (data.audioUrl) {
+                        const audio = new Audio(data.audioUrl);
+                        audio.play();
+                    } else {
+                        if ('speechSynthesis' in window) {
+                            const utterance = new SpeechSynthesisUtterance(data.chinese);
+                            utterance.lang = 'zh-CN';
+                            speechSynthesis.speak(utterance);
+                        } else {
+                            alert('Web Speech API 在此浏览器中不受支持。');
+                        }
+                    }
+                });
+            }
+            const editIcon = item.querySelector('.edit-icon');
+            if (editIcon) {
+                editIcon.addEventListener('click', () => {
+                    const docId = item.getAttribute('data-doc-id');
+                    // Populate edit form with data
+                    document.getElementById('edit-title').textContent = data.chinese;
+                    document.getElementById('edit-meaning').value = data.meaning;
+                    document.getElementById('edit-pinyin').value = data.pinyin;
+                    document.getElementById('edit-hanviet').value = data.hanviet || '';
+                    document.getElementById('edit-category').value = data.category || '生活';
+                    // Show edit modal
+                    document.getElementById('edit-vocab-form').style.display = 'block';
+                    // Store docId for submit
+                    document.getElementById('edit-vocab-form-element').setAttribute('data-doc-id', docId);
+                });
+            }
+            list.appendChild(item);
+        });
+        document.getElementById('vocab-count').innerHTML = '<span style="font-family: \'Ma Shan Zheng\', cursive;">总</span><br><span style="font-family: \'Ma Shan Zheng\', cursive;">共</span><br><span style="font-family: Caveat, cursive;">' + filteredVocabularies.length + '</span><br><span style="font-family: \'Ma Shan Zheng\', cursive;">词</span>';
+
+        // Append pagination to the list
+        let pagination = document.getElementById('pagination');
+        if (!pagination) {
+            pagination = document.createElement('div');
+            pagination.id = 'pagination';
+            pagination.className = 'pagination';
+            list.appendChild(pagination);
+        }
+
+        renderPagination(filteredVocabularies.length, page);
+    }
+
+    function renderPagination(totalItems, currentPage) {
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        if (totalPages <= 1) {
+            pagination.style.display = 'none';
+            return;
+        }
+        pagination.style.display = 'flex';
+
+        // First button
+        if (currentPage > 1) {
+            const firstButton = document.createElement('button');
+            firstButton.textContent = '首页';
+            firstButton.addEventListener('click', () => {
+                updateCurrentPage(1);
+                displayVocabularies(currentFilteredVocabularies, 1);
+                list.scrollTop = 0;
+            });
+            pagination.appendChild(firstButton);
+        }
+
+        // Previous button
+        if (currentPage > 1) {
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '上一页';
+            prevButton.addEventListener('click', () => {
+                updateCurrentPage(currentPage - 1);
+                displayVocabularies(currentFilteredVocabularies, currentPage - 1);
+                list.scrollTop = 0;
+            });
+            pagination.appendChild(prevButton);
+        }
+
+        // Page numbers
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+        for (let i = startPage; i <= endPage; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            if (i === currentPage) {
+                pageButton.classList.add('active');
+            }
+            pageButton.addEventListener('click', () => {
+                updateCurrentPage(i);
+                displayVocabularies(currentFilteredVocabularies, i);
+                list.scrollTop = 0;
+            });
+            pagination.appendChild(pageButton);
+        }
+
+        // Next button
+        if (currentPage < totalPages) {
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '下一页';
+            nextButton.addEventListener('click', () => {
+                updateCurrentPage(currentPage + 1);
+                displayVocabularies(currentFilteredVocabularies, currentPage + 1);
+                list.scrollTop = 0;
+            });
+            pagination.appendChild(nextButton);
+        }
+
+        // Last button
+        if (currentPage < totalPages) {
+            const lastButton = document.createElement('button');
+            lastButton.textContent = '末页';
+            lastButton.addEventListener('click', () => {
+                updateCurrentPage(totalPages);
+                displayVocabularies(currentFilteredVocabularies, totalPages);
+                list.scrollTop = 0;
+            });
+            pagination.appendChild(lastButton);
+        }
+    }
+
+    displayVocabularies(vocabularies);
+    let currentFilteredVocabularies = vocabularies;
+    let playState = 'idle';
+    let stopFlag = false;
+    let playIndex = 0;
+    let previousVocabId = null;
+
+    function updateCurrentPage(page) {
+        currentPage = page;
+    }
+
+    function clearHighlight() {
+        document.querySelectorAll('.chinese-word').forEach(el => el.classList.remove('highlight', 'highlight-last'));
+    }
+
+    const playNext = () => {
+        if (stopFlag || playIndex >= currentFilteredVocabularies.length) {
+            clearHighlight();
+            previousVocabId = null;
+            if (playIndex >= currentFilteredVocabularies.length) {
+                playState = 'idle';
+                const button = document.getElementById('listen-all-btn');
+                button.textContent = '听所有词汇';
+            }
+            return;
+        }
+        const vocab = currentFilteredVocabularies[playIndex];
+        // Remove highlight from previous word
+        if (previousVocabId) {
+            const prevSpan = document.getElementById(`chinese-${previousVocabId}`);
+            if (prevSpan) prevSpan.classList.remove('highlight', 'highlight-last');
+        }
+        // Add highlight to current word
+        const currentSpan = document.getElementById(`chinese-${vocab.id}`);
+        if (currentSpan) {
+            if (playIndex === currentFilteredVocabularies.length - 1) {
+                currentSpan.classList.add('highlight-last');
+            } else {
+                currentSpan.classList.add('highlight');
+            }
+            currentSpan.scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
+        previousVocabId = vocab.id;
+        if (vocab.audioUrl) {
+            const audio = new Audio(vocab.audioUrl);
+            audio.play();
+            audio.onended = () => {
+                setTimeout(() => {
+                    playIndex++;
+                    const newPage = Math.ceil((playIndex + 1) / itemsPerPage);
+                    if (newPage !== currentPage) {
+                        updateCurrentPage(newPage);
+                        displayVocabularies(currentFilteredVocabularies, newPage);
+                    }
+                    playNext();
+                }, 1000);
+            };
+        } else {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(vocab.chinese);
+                utterance.lang = 'zh-CN';
+                speechSynthesis.speak(utterance);
+                utterance.onend = () => {
+                    setTimeout(() => {
+                        playIndex++;
+                        const newPage = Math.ceil((playIndex + 1) / itemsPerPage);
+                        if (newPage !== currentPage) {
+                            updateCurrentPage(newPage);
+                            displayVocabularies(currentFilteredVocabularies, newPage);
+                        }
+                        playNext();
+                    }, 1000);
+                };
+            }
+        }
+    };
+    
+    // Search functionality
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const category = document.getElementById('category-filter').value;
+        const filtered = vocabularies.filter(vocab => {
+            const matchesSearch = vocab.chinese.toLowerCase().includes(term) ||
+                    (vocab.hanviet && vocab.hanviet.toLowerCase().includes(term)) ||
+                    vocab.meaning.toLowerCase().includes(term) ||
+                    vocab.pinyin.toLowerCase().includes(term);
+            const matchesCategory = category === '' || vocab.category === category;
+            return matchesSearch && matchesCategory;
+        });
+        filtered.sort((a, b) => (a.pinyin || '').localeCompare(b.pinyin || ''));
+        updateCurrentPage(1);
+        displayVocabularies(filtered);
+        currentFilteredVocabularies = filtered;
+    });
+
+    // Category filter functionality
+    document.getElementById('category-filter').addEventListener('change', () => {
+        const term = document.getElementById('search-input').value.toLowerCase();
+        const category = document.getElementById('category-filter').value;
+        const filtered = vocabularies.filter(vocab => {
+            const matchesSearch = vocab.chinese.toLowerCase().includes(term) ||
+                    (vocab.hanviet && vocab.hanviet.toLowerCase().includes(term)) ||
+                    vocab.meaning.toLowerCase().includes(term) ||
+                    vocab.pinyin.toLowerCase().includes(term);
+            const matchesCategory = category === '' || vocab.category === category;
+            return matchesSearch && matchesCategory;
+        });
+        filtered.sort((a, b) => (a.pinyin || '').localeCompare(b.pinyin || ''));
+        updateCurrentPage(1);
+        displayVocabularies(filtered);
+        currentFilteredVocabularies = filtered;
+    });
+
+    // Add event listener for listen-all-btn
+    const button = document.getElementById('listen-all-btn');
+    button.addEventListener('click', function() {
+        if (playState === 'idle') {
+            playIndex = (currentPage - 1) * itemsPerPage;
+            stopFlag = false;
+            playState = 'playing';
+            button.textContent = '停止';
+            clearHighlight();
+            playNext();
+        } else if (playState === 'playing') {
+            stopFlag = true;
+            playState = 'stopped';
+            button.textContent = '从头播放';
+            clearHighlight();
+        } else if (playState === 'stopped') {
+            playIndex = (currentPage - 1) * itemsPerPage;
+            stopFlag = false;
+            playState = 'playing';
+            button.textContent = '停止';
+            clearHighlight();
+            playNext();
+        }
+    });
+}).catch((error) => {
+    console.error('添加词汇时出错:', error);
+});
+
+// Menu toggle
+document.getElementById('menu-button').addEventListener('click', function() {
+    const dropdown = document.getElementById('menu-dropdown');
+    const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
+    const vocabList = document.getElementById('vocab-list');
+    const vocabCount = document.getElementById('vocab-count');
+    const listenAllBtn = document.getElementById('listen-all-btn');
+
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+        searchInput.classList.remove('dimmed');
+        categoryFilter.classList.remove('dimmed');
+        vocabList.classList.remove('dimmed');
+        vocabCount.classList.remove('dimmed');
+        vocabCount.style.display = 'flex';
+        listenAllBtn.style.display = '';
+    } else {
+        dropdown.style.display = 'block';
+        searchInput.classList.add('dimmed');
+        categoryFilter.classList.add('dimmed');
+        vocabList.classList.add('dimmed');
+        vocabCount.classList.add('dimmed');
+        vocabCount.style.display = 'none';
+        listenAllBtn.style.display = 'none';
+    }
+});
+
+// Check vocab modal toggle
+document.getElementById('check-vocab-link').addEventListener('click', async function(e) {
+    e.preventDefault();
+    document.getElementById('check-vocab-modal').style.display = 'block';
+    document.getElementById('menu-dropdown').style.display = 'none';
+    // Keep dimmed
+    // Load quiz settings
+    const docRef = db.collection('quiz-settings').doc('settings');
+    const doc = await docRef.get();
+    if (doc.exists) {
+        const data = doc.data();
+        document.getElementById('num-words').value = data.numWords || '';
+        document.getElementById('quiz-category').value = data.category || '全部';
+        document.getElementById('include-gucu').checked = data.includeGucu || false;
+    } else {
+        document.getElementById('num-words').value = '';
+        document.getElementById('quiz-category').value = '全部';
+        document.getElementById('include-gucu').checked = false;
+    }
+});
+
+// Close check vocab modal
+document.getElementById('close-check-vocab-modal').addEventListener('click', function() {
+    document.getElementById('check-vocab-modal').style.display = 'none';
+    document.getElementById('search-input').classList.remove('dimmed');
+    document.getElementById('category-filter').classList.remove('dimmed');
+    document.getElementById('vocab-list').classList.remove('dimmed');
+});
+
+// Show vocab form
+document.getElementById('add-vocab-link').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('vocab-form').style.display = 'block';
+    document.getElementById('menu-dropdown').style.display = 'none';
+    document.getElementById('search-input').classList.remove('dimmed');
+    document.getElementById('category-filter').classList.remove('dimmed');
+    document.getElementById('vocab-list').classList.remove('dimmed');
+});
+
+// Close vocab form
+document.getElementById('close-form').addEventListener('click', function() {
+    document.getElementById('vocab-form').style.display = 'none';
+});
+
+// Close edit vocab form
+document.getElementById('close-edit-form').addEventListener('click', function() {
+    document.getElementById('edit-vocab-form').style.display = 'none';
+    document.getElementById('edit-vocab-form-element').reset();
+});
+
+
+// Submit quiz settings form
+document.getElementById('quiz-settings-form-element').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const numWords = document.getElementById('num-words').value;
+    if (numWords.trim() !== "" && (parseInt(numWords) <= 0 || isNaN(parseInt(numWords)))) {
+        alert("词汇数必须大于等于1");
+        return;
+    }
+    const category = document.getElementById('quiz-category').value;
+    const includeGucu = document.getElementById('include-gucu').checked;
+    const docRef = db.collection('quiz-settings').doc('settings');
+    const doc = await docRef.get();
+    if (doc.exists) {
+        await docRef.update({
+            numWords: numWords,
+            category: category,
+            includeGucu: includeGucu
+        });
+    } else {
+        await docRef.set({
+            numWords: numWords,
+            category: category,
+            includeGucu: includeGucu
+        });
+    }
+    // Show success notification without closing modal
+    const successMsg = document.createElement('div');
+    successMsg.textContent = '设置已保存！';
+    successMsg.style.position = 'fixed';
+    successMsg.style.top = '50%';
+    successMsg.style.left = '50%';
+    successMsg.style.transform = 'translate(-50%, -50%)';
+    successMsg.style.background = 'rgba(0,0,0,0.8)';
+    successMsg.style.color = 'white';
+    successMsg.style.padding = '10px';
+    successMsg.style.borderRadius = '5px';
+    successMsg.style.fontSize = '18px';
+    successMsg.style.fontFamily = 'Ma Shan Zheng, sans-serif';
+    successMsg.style.zIndex = '3000';
+    document.body.appendChild(successMsg);
+    setTimeout(() => {
+        document.body.removeChild(successMsg);
+    }, 1000);
+});
+
+// Submit edit vocab form
+document.getElementById('edit-vocab-form-element').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const docId = this.getAttribute('data-doc-id');
+    const chinese = document.getElementById('edit-title').textContent;
+    const meaning = document.getElementById('edit-meaning').value;
+    const pinyin = document.getElementById('edit-pinyin').value;
+    const hanviet = document.getElementById('edit-hanviet').value;
+    const audioFile = document.getElementById('edit-audio').files[0];
+
+    document.getElementById('spinner').style.display = 'block';
+
+    try {
+        let audioUrl = null;
+        if (audioFile) {
+            const formData = new FormData();
+            formData.append('file', audioFile);
+            formData.append('upload_preset', uploadPreset);
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            audioUrl = result.secure_url;
+        }
+
+        const updateData = {
+            chinese: chinese,
+            meaning: meaning,
+            pinyin: pinyin,
+            hanviet: hanviet,
+            category: document.getElementById('edit-category').value
+        };
+        if (audioUrl) {
+            updateData.audioUrl = audioUrl;
+        }
+
+        await db.collection('vocabularies').doc(docId).update(updateData);
+
+        document.getElementById('spinner').style.display = 'none';
+
+        // Close modal
+        document.getElementById('edit-vocab-form').style.display = 'none';
+        document.getElementById('edit-vocab-form-element').reset();
+
+        // Refresh list
+        location.reload(); // Simple way to refresh
+
+    } catch (error) {
+        document.getElementById('spinner').style.display = 'none';
+        console.error('更新词汇失败：', error);
+        alert('更新词汇失败。');
+    }
+    });
+    
+    // Add event listener for delete vocab button
+    document.getElementById('delete-vocab-btn').addEventListener('click', async function() {
+        const docId = document.getElementById('edit-vocab-form-element').getAttribute('data-doc-id');
+        if (confirm('确定要删除这个词语吗？')) {
+            try {
+                await db.collection('vocabularies').doc(docId).delete();
+                document.getElementById('edit-vocab-form').style.display = 'none';
+                location.reload();
+            } catch (error) {
+                alert('删除失败');
+            }
+        }
+    });
+    
+    // Submit vocab form
+document.getElementById('vocab-form-element').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const chinese = document.getElementById('chinese').value;
+    const meaning = document.getElementById('meaning').value;
+    const pinyin = document.getElementById('pinyin').value;
+    const hanviet = document.getElementById('hanviet').value;
+    const audioFile = document.getElementById('audio').files[0];
+
+    document.getElementById('spinner').style.display = 'block';
+
+    try {
+        // Check if chinese already exists
+        const existingVocab = await db.collection('vocabularies').where('chinese', '==', chinese).get();
+        if (!existingVocab.empty) {
+            alert('该中文词语已存在！');
+            document.getElementById('spinner').style.display = 'none';
+            return;
+        }
+
+        let audioUrl = null;
+        if (audioFile) {
+            const formData = new FormData();
+            formData.append('file', audioFile);
+            formData.append('upload_preset', uploadPreset);
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            audioUrl = result.secure_url;
+        }
+
+        await db.collection('vocabularies').add({
+            chinese: chinese,
+            meaning: meaning,
+            pinyin: pinyin,
+            hanviet: hanviet,
+            category: document.getElementById('category').value,
+            audioUrl: audioUrl,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        const notification = document.getElementById('notification');
+        notification.style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('spinner').style.display = 'none';
+            notification.style.display = 'none';
+            document.getElementById('vocab-form').style.display = 'none';
+            document.getElementById('vocab-form-element').reset();
+            location.reload(); // Reload page after adding new vocab
+        }, 1000);
+    } catch (error) {
+        document.getElementById('spinner').style.display = 'none';
+        console.error('添加词汇时出错:', error);
+        alert('添加词汇时发生错误。');
+    }
+});
+
+// Add event listener for read-btn to navigate to reading test page
+document.getElementById('read-btn').addEventListener('click', function() {
+    window.location.href = 'readingTest/index.html';
+});
+
+// Add event listener for listen-btn to navigate to listening test page
+document.getElementById('listen-btn').addEventListener('click', function() {
+    window.location.href = 'listeningTest/index.html';
+});
+
+// Add event listener for translate-btn to navigate to translation test page
+document.getElementById('translate-btn').addEventListener('click', function() {
+    window.location.href = 'translationTest/index.html';
+});
+
+// Background selection logic
+let selectedVideo = localStorage.getItem('selectedBackground') || 'background.mp4';
+document.getElementById('video').src = selectedVideo;
+
+document.getElementById('select-background-link').addEventListener('click', function() {
+    document.getElementById('background-modal').style.display = 'block';
+    loadBackgroundThumbnails();
+});
+
+document.getElementById('close-background-modal').addEventListener('click', function() {
+    document.getElementById('background-modal').style.display = 'none';
+});
+
+document.getElementById('confirm-background').addEventListener('click', function() {
+    if (selectedVideo) {
+        localStorage.setItem('selectedBackground', selectedVideo);
+        document.getElementById('video').src = selectedVideo;
+        document.getElementById('background-modal').style.display = 'none';
+        window.location.reload();
+    }
+});
+
+function loadBackgroundThumbnails() {
+    const container = document.getElementById('background-thumbnails');
+    container.innerHTML = '';
+    const loading = document.getElementById('background-loading');
+    loading.style.display = 'block';
+    let loadedCount = 0;
+    const videos = ['background/1.mp4', 'background/2.mp4', 'background/3.mp4', 'background/4.mp4', 'background/5.mp4', 'background/6.mp4', 'background/7.mp4', 'background/8.mp4', 'background/9.mp4', 'background/10.mp4', 'background/11.mp4', 'background/12.mp4', 'background/13.mp4', 'background/14.mp4', 'background/15.mp4', 'background/16.mp4'];
+    const totalVideos = videos.length;
+    videos.forEach(videoPath => {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.preload = 'metadata';
+        video.src = videoPath;
+        video.style.display = 'none';
+        document.body.appendChild(video);
+        video.addEventListener('loadedmetadata', () => {
+            video.currentTime = 1;
+        });
+        video.addEventListener('seeked', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 150;
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL();
+            img.classList.add('thumbnail');
+            if (selectedVideo === videoPath) {
+                img.classList.add('selected');
+            }
+            img.addEventListener('click', () => {
+                document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('selected'));
+                img.classList.add('selected');
+                selectedVideo = videoPath;
+            });
+            container.appendChild(img);
+            loadedCount++;
+            if (loadedCount === totalVideos) {
+                loading.style.display = 'none';
+            }
+            document.body.removeChild(video);
+        });
+    });
+}

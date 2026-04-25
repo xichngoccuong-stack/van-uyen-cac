@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文渊阁</title>
+    <link rel="icon" href="../logo.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Shalimar&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        #video {
+            display: none;
+        }
+        body {
+            background: black;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+        }
+        .listen-btn {
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            background: linear-gradient(45deg, red, black);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Ma Shan Zheng', sans-serif;
+            overflow: hidden;
+            z-index: 1000;
+        }
+        .listen-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+            }
+        }
+        .listen-btn:hover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 1s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .dimmed { opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <img src="../logo.ico" alt="Logo">
+            <h1>Vaên Uyeân Caùc</h1>
+        </div>
+        <button id="home-btn" style="background: transparent; border: none; color: white; font-size: 40px; cursor: pointer;">⌂</button>
+        <button id="add-phrase-btn" style="background: transparent; border: none; color: white; font-size: 40px; cursor: pointer;">+</button>
+        <input type="text" id="search-input" placeholder="搜索。。。" class="search-input">
+        <select id="category-filter" style="background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 5px; padding: 5px; font-family: 'Ma Shan Zheng', sans-serif;">
+            <option value="all">全部</option>
+            <option value="生活">生活</option>
+            <option value="工作">工作</option>
+            <option value="学习">学习</option>
+        </select>
+        <button id="listen-all-btn" style="padding: 5px 10px; font-family: 'Ma Shan Zheng', sans-serif; background: transparent; color: white; border: 1px solid white; border-radius: 4px; cursor: pointer;display: none;">听全部</button>
+    </header>
+
+    <!-- Add Phrase Form -->
+    <div id="phrase-form" class="vocab-form" style="width: 500px;">
+        <h2 style="font-weight: normal;">添加新对话</h2>
+        <form id="phrase-form-element">
+            <label for="phrase-chinese">中文句子:</label>
+            <input type="text" id="phrase-chinese" required>
+            <label for="phrase-meaning">意思:</label>
+            <input type="text" id="phrase-meaning" required>
+            <label for="phrase-pinyin">拼音:</label>
+            <input type="text" id="phrase-pinyin" required>
+            <label for="phrase-category">类别:</label>
+            <select id="phrase-category">
+                <option value="生活" selected>生活</option>
+                <option value="工作">工作</option>
+                <option value="学习">学习</option>
+            </select>
+            <label for="phrase-audio">音频:</label>
+            <input type="file" id="phrase-audio" accept="audio/mp3">
+            <div class="button-row">
+                <button type="submit">添加</button>
+                <button type="button" id="close-phrase-form">关闭</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Edit Phrase Form -->
+    <div id="edit-phrase-form" class="vocab-form" style="display: none;">
+        <h2 style="font-weight: normal;">编辑对话</h2>
+        <form id="edit-phrase-form-element">
+            <label for="edit-phrase-chinese">中文句子:</label>
+            <input type="text" id="edit-phrase-chinese" required>
+            <label for="edit-phrase-meaning">意思:</label>
+            <input type="text" id="edit-phrase-meaning" required>
+            <label for="edit-phrase-pinyin">拼音:</label>
+            <input type="text" id="edit-phrase-pinyin" required>
+            <label for="edit-phrase-category">类别:</label>
+            <select id="edit-phrase-category">
+                <option value="生活" selected>生活</option>
+                <option value="工作">工作</option>
+                <option value="学习">学习</option>
+            </select>
+            <label for="edit-phrase-audio">音频:</label>
+            <input type="file" id="edit-phrase-audio" accept="audio/mp3">
+            <div class="button-row">
+                <button type="submit">更新</button>
+                <button type="button" id="close-edit-phrase-form">关闭</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Background -->
+    <video id="video" src="../background.mp4" muted autoplay loop></video>
+
+    <!-- Phrase List -->
+    <div id="phrase-list" class="vocab-list"></div>
+    <div id="spinner" class="spinner"></div>
+    <script src="script.js"></script>
+
+    <!-- Author Link -->
+    <div id="author-link" style="position: fixed; bottom: 25px; left: 98%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; align-items: flex-start;">
+        <a href="https://facebook.com/dead.lai" target="_blank" style="background: linear-gradient(to right, red, orange); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; font-family: 'Ma Shan Zheng', sans-serif; text-decoration: none;">文<br>渊<br>阁<br>主</a>
+        <div style="margin-top: -10px; margin-left: -25px;"> <!-- Adjust margin-left to position to the left -->
+            <a href="https://facebook.com/dead.lai" target="_blank" style="background: linear-gradient(to right, red, orange); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; font-family: 'Ma Shan Zheng', sans-serif; text-decoration: none;">白<br>音</a>
+        </div>
+    </div>
+</body>
+</html>

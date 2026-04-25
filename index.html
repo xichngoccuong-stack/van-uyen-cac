@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文渊阁</title>
+    <link rel="icon" href="logo.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Shalimar&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <img src="logo.ico" alt="Logo">
+            <h1>Vaên Uyeân Caùc</h1>
+        </div>
+
+        <div class="menu-container">
+            <button id="menu-button" onclick="document.getElementById('listen-all-btn').style.display = 'none';" style="background: transparent; border: none; color: white; font-size: 30px; cursor: pointer;">☰</button>
+            <div id="menu-dropdown" class="menu-dropdown">
+                <ul>
+                    <li><a href="#" id="add-vocab-link">✦ 生词</a></li>
+                    <li><a href="#" id="check-vocab-link">✦ 检查词汇</a></li>
+                    <li><a href="commonPhrases/index.html" id="common-phrases-link" style="background: linear-gradient(to right, green, orange); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">✦ 日常用语</a></li>
+                    <li><a href="https://xian-yin-ge-v2.netlify.app" target="_blank" id="xian-yin-ge-link">✦ 仙音阁</a></li>
+                    <li><a href="#" id="select-background-link">✦ 选择背景</a></li>
+                    </ul>
+            </div>
+        </div>
+        <div id="vocab-count" style="font-size: 20px; background: linear-gradient(to right, white, gray); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 0.5; padding: 0; margin: 0;">
+            <span style="font-family: 'Ma Shan Zheng', cursive; display: block;">总</span>
+            <span style="font-family: 'Ma Shan Zheng', cursive; display: block;">共</span>
+            <span style="font-family: Caveat, cursive; display: block;">0</span>
+            <span style="font-family: 'Ma Shan Zheng', cursive; display: block;">词</span>
+        </div>
+        <div class="search-filter-row">
+            <input type="text" id="search-input" placeholder="搜索。。。" class="search-input">
+            <select id="category-filter" class="category-filter">
+                <option value="">全部</option>
+                <option value="生活">生活</option>
+                <option value="工作">工作</option>
+                <option value="学习">学习</option>
+                <option value="古词">古装</option>
+            </select>
+            <button id="listen-all-btn" style="padding: 5px 10px; font-family: 'Ma Shan Zheng', sans-serif; background: transparent; color: white; border: 1px solid white; border-radius: 4px; cursor: pointer;">听所有词汇</button>
+        </div>
+    </header>
+
+        <!-- Vocabulary Form -->
+        <div id="vocab-form" class="vocab-form">
+            <h2 style="font-weight: normal;">添加词汇</h2>
+            <form id="vocab-form-element">
+                <label for="chinese">中文词语:</label>
+                <input type="text" id="chinese" required>
+                <label for="meaning">意思:</label>
+                <input type="text" id="meaning" required>
+                <label for="pinyin">拼音:</label>
+                <input type="text" id="pinyin" required>
+                <label for="hanviet">汉越音:</label>
+                <input type="text" id="hanviet">
+                <label for="category">类别:</label>
+                <select id="category">
+                    <option value="生活" selected>生活</option>
+                    <option value="工作">工作</option>
+                    <option value="学习">学习</option>
+                    <option value="古词">古装</option>
+                </select>
+                <label for="audio">音频:</label>
+                <input type="file" id="audio" accept="audio/mp3">
+                <div class="button-row">
+                    <button type="submit">添加</button>
+                    <button type="button" id="close-form">关闭</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Edit Vocabulary Form -->
+        <div id="edit-vocab-form" class="vocab-form" style="display: none;">
+            <h2 id="edit-title" style="font-weight: normal;"></h2>
+            <form id="edit-vocab-form-element">
+                <button type="button" id="delete-vocab-btn" style="margin-left: 10px; background: linear-gradient(to right, red, black); color: white; border: none; padding: 10px 20px; font-family: 'Ma Shan Zheng', sans-serif; font-size: 20px;">删除词语</button>
+                <label for="edit-meaning">意思:</label>
+                <input type="text" id="edit-meaning" required>
+                <label for="edit-pinyin">拼音:</label>
+                <input type="text" id="edit-pinyin" required>
+                <label for="edit-hanviet">汉越音:</label>
+                <input type="text" id="edit-hanviet">
+                <label for="edit-category">类别:</label>
+                <select id="edit-category">
+                    <option value="生活" selected>生活</option>
+                    <option value="工作">工作</option>
+                    <option value="学习">学习</option>
+                    <option value="古词">古装</option>
+                </select>
+                <label for="edit-audio">音频:</label>
+                <input type="file" id="edit-audio" accept="audio/mp3">
+                <div class="button-row">
+                    <button type="submit">更新</button>
+                    <button type="button" id="close-edit-form">关闭</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Check Vocab Modal -->
+        <div id="check-vocab-modal" class="vocab-form" style="display: none;">
+            <h2 style="font-weight: normal; color: white;">检查词汇</h2>
+            <p style="color: white;">设置检查参数</p>
+            <form id="quiz-settings-form-element" style="gap: 5px;">
+                <label for="num-words" style="color: white; margin-top: 5px;">词汇数:</label>
+                <input type="number" id="num-words" style="margin-bottom: 5px;">
+                <label for="quiz-category" style="color: white; margin-top: 5px;">类别:</label>
+                <select id="quiz-category" style="margin-bottom: 10px;">
+                    <option value="全部" selected>全部</option>
+                    <option value="生活">生活</option>
+                    <option value="工作">工作</option>
+                    <option value="学习">学习</option>
+                    <option value="古词">古装</option>
+                </select>
+                <div style="display: flex; align-items: baseline; margin-top: 0px; margin-bottom: 10px;">
+                    <label for="include-gucu" style="color: black; margin-top: -30px;">包括古装剧中常用的词汇</label>
+                    <input type="checkbox" id="include-gucu" style="width: 20px; height: 20px; margin-left: 10px;">
+                </div>
+                <div class="button-row" style="justify-content: center;">
+                    <button type="submit" style="margin: 0 auto;">保存设置</button>
+                </div>
+            </form>
+            <hr style="border: none; height: 1px; background: black; margin: 20px 0;">
+            <p style="color: white;">选择检查类型</p>
+            <div class="button-row">
+                <button type="button" id="read-btn">读</button>
+                <button type="button" id="listen-btn">听</button>
+                <button type="button" id="translate-btn">译</button>
+            </div>
+            <div class="button-row" style="margin-top: 20px; justify-content: center;">
+                <button type="button" id="close-check-vocab-modal">关闭</button>
+            </div>
+        </div>
+        
+        <!-- Background Selection Modal -->
+        <div id="background-modal" class="vocab-form" style="display: none;">
+            <h2 style="font-weight: normal;">选择背景</h2>
+            <div id="background-thumbnails" class="background-thumbnails"></div>
+            <div id="background-loading" class="loading-spinner" style="display: none;">加载中...</div>
+            <div class="button-row">
+                <button type="button" id="confirm-background">确认</button>
+                <button type="button" id="close-background-modal">关闭</button>
+            </div>
+        </div>
+        
+        <!-- Background -->
+    <img id="image" src="background.png" alt="背景图像">
+    <video id="video" src="background.mp4" muted autoplay loop></video>
+
+    <script src="script.js"></script>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">词汇已成功添加！</div>
+
+    <!-- Vocabulary List -->
+    <div id="vocab-list" class="vocab-list"></div>
+    <div id="spinner" class="spinner"></div>
+
+    <!-- Author Link -->
+    <div id="author-link" style="position: fixed; bottom: 25px; left: 98%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; align-items: flex-start;">
+        <a href="https://wen-yuan-ge.netlify.app/admin" target="_blank" style="background: linear-gradient(to right, red, orange); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; font-family: 'Ma Shan Zheng', sans-serif; text-decoration: none;">文<br>渊<br>阁<br>主</a>
+        <div style="margin-top: -10px; margin-left: -25px;"> <!-- Adjust margin-left to position to the left -->
+            <a href="https://facebook.com/dead.lai" target="_blank" style="background: linear-gradient(to right, orange, red); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; font-family: 'Ma Shan Zheng', sans-serif; text-decoration: none;">白<br>音</a>
+        </div>
+    </div>
+    </body>
+</html>
